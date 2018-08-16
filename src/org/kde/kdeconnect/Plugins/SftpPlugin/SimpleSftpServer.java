@@ -21,37 +21,27 @@
 package org.kde.kdeconnect.Plugins.SftpPlugin;
 
 import android.content.Context;
-import android.net.Uri;
 import android.util.Log;
 
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.server.FileSystemView;
-import org.apache.sshd.server.PasswordAuthenticator;
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.SshFile;
-import org.apache.sshd.server.command.ScpCommandFactory;
-import org.apache.sshd.server.filesystem.NativeFileSystemView;
-import org.apache.sshd.server.filesystem.NativeSshFile;
-import org.apache.sshd.server.kex.DHG1;
-import org.apache.sshd.server.kex.DHG14;
+import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.server.ServerBuilder;
+import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.kex.DHGEXServer;
+import org.apache.sshd.server.kex.DHGServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.kde.kdeconnect.Device;
-import org.kde.kdeconnect.Helpers.MediaStoreHelper;
 import org.kde.kdeconnect.Helpers.RandomHelper;
 import org.kde.kdeconnect.Helpers.SecurityHelpers.SslHelper;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -74,29 +64,34 @@ class SimpleSftpServer {
     private final SimplePasswordAuthenticator passwordAuth = new SimplePasswordAuthenticator();
     private final SimplePublicKeyAuthenticator keyAuth = new SimplePublicKeyAuthenticator();
 
+    private SshServer sshd;
+
     static {
         Security.insertProviderAt(SslHelper.BC, 1);
-        SecurityUtils.setRegisterBouncyCastle(false);
+        //SecurityUtils.setRegisterBouncyCastle(false);
     }
-
-    private final SshServer sshd = SshServer.setUpDefaultServer();
-
     public void init(Context context, Device device) {
 
-        sshd.setKeyExchangeFactories(Arrays.asList(
-                new DHG14.Factory(),
-                new DHG1.Factory()));
+        System.setProperty("user.home", "/"); //Hack
+        NativeFileSystemFactory fileSystemFactory = new NativeFileSystemFactory(false);
+        fileSystemFactory.setUsersHomeDir("/");
 
-        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(context.getFilesDir() + "/sftpd.ser"));
+        sshd = ServerBuilder.builder()
+            .keyExchangeFactories(Arrays.asList(
+                    DHGEXServer.newFactory(BuiltinDHFactories.dhgex),
+                    DHGEXServer.newFactory(BuiltinDHFactories.dhgex256),
+                    DHGServer.newFactory(BuiltinDHFactories.ecdhp256),
+                    DHGServer.newFactory(BuiltinDHFactories.ecdhp384),
+                    DHGServer.newFactory(BuiltinDHFactories.ecdhp521)
+            ))
+            .fileSystemFactory(fileSystemFactory)
+            .build();
 
-        sshd.setFileSystemFactory(new AndroidFileSystemFactory(context));
+        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(context.getFilesDir() + "/sftpd.ser")));
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setSubsystemFactories(Collections.singletonList((NamedFactory<Command>) new SftpSubsystem.Factory()));
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
 
-        if (device.publicKey != null) {
-            keyAuth.deviceKey = device.publicKey;
-            sshd.setPublickeyAuthenticator(keyAuth);
-        }
+        sshd.setPublickeyAuthenticator(keyAuth);
         sshd.setPasswordAuthenticator(passwordAuth);
     }
 
@@ -175,99 +170,99 @@ class SimpleSftpServer {
         }
         return ip6;
     }
+    /*
+        static class AndroidFileSystemFactory implements FileSystemFactory {
 
-    static class AndroidFileSystemFactory implements FileSystemFactory {
+            final private Context context;
 
-        final private Context context;
-
-        public AndroidFileSystemFactory(Context context) {
-            this.context = context;
-        }
-
-        @Override
-        public FileSystemView createFileSystemView(final Session username) {
-            return new AndroidFileSystemView(username.getUsername(), context);
-        }
-    }
-
-    static class AndroidFileSystemView extends NativeFileSystemView {
-
-        final private String userName;
-        final private Context context;
-
-        public AndroidFileSystemView(final String userName, Context context) {
-            super(userName, true);
-            this.userName = userName;
-            this.context = context;
-        }
-
-        @Override
-        protected SshFile getFile(final String dir, final String file) {
-            File fileObj = new File(dir, file);
-            return new AndroidSshFile(fileObj, userName, context);
-        }
-    }
-
-    static class AndroidSshFile extends NativeSshFile {
-
-        final private Context context;
-        final private File file;
-
-        public AndroidSshFile(final File file, final String userName, Context context) {
-            super(file.getAbsolutePath(), file, userName);
-            this.context = context;
-            this.file = file;
-        }
-
-        @Override
-        public OutputStream createOutputStream(long offset) throws IOException {
-            if (!isWritable()) {
-                throw new IOException("No write permission : " + file.getName());
+            public AndroidFileSystemFactory(Context context) {
+                this.context = context;
             }
 
-            final RandomAccessFile raf = new RandomAccessFile(file, "rw");
-            try {
-                if (offset < raf.length()) {
-                    throw new IOException("Your SSHFS is bugged"); //SSHFS 3.0 and 3.2 cause data corruption, abort the transfer if this happens
+            @Override
+            public FileSystem createFileSystem(Session session) throws IOException {
+                return new AndroidFileSystem(session.getUsername(), context);
+            }
+        }
+
+        static class AndroidFileSystem extends NativeFileSystem {
+
+            final private String userName;
+            final private Context context;
+
+            public AndroidFileSystemView(final String userName, Context context) {
+                super(userName, true);
+                this.userName = userName;
+                this.context = context;
+            }
+
+            @Override
+            protected SshFile getFile(final String dir, final String file) {
+                File fileObj = new File(dir, file);
+                return new AndroidSshFile(fileObj, userName, context);
+            }
+        }
+
+        static class AndroidSshFile extends NativeSshFile {
+
+            final private Context context;
+            final private File file;
+
+            public AndroidSshFile(final File file, final String userName, Context context) {
+                super(file.getAbsolutePath(), file, userName);
+                this.context = context;
+                this.file = file;
+            }
+
+            @Override
+            public OutputStream createOutputStream(long offset) throws IOException {
+                if (!isWritable()) {
+                    throw new IOException("No write permission : " + file.getName());
                 }
-                raf.setLength(offset);
-                raf.seek(offset);
 
-                return new FileOutputStream(raf.getFD()) {
-                    public void close() throws IOException {
-                        super.close();
-                        raf.close();
+                final RandomAccessFile raf = new RandomAccessFile(file, "rw");
+                try {
+                    if (offset < raf.length()) {
+                        throw new IOException("Your SSHFS is bugged"); //SSHFS 3.0 and 3.2 cause data corruption, abort the transfer if this happens
                     }
-                };
-            } catch (IOException e) {
-                raf.close();
-                throw e;
+                    raf.setLength(offset);
+                    raf.seek(offset);
+
+                    return new FileOutputStream(raf.getFD()) {
+                        public void close() throws IOException {
+                            super.close();
+                            raf.close();
+                        }
+                    };
+                } catch (IOException e) {
+                    raf.close();
+                    throw e;
+                }
+            }
+
+            @Override
+            public boolean delete() {
+                //Log.e("Sshd", "deleting file");
+                boolean ret = super.delete();
+                if (ret) {
+                    MediaStoreHelper.indexFile(context, Uri.fromFile(file));
+                }
+                return ret;
+
+            }
+
+            @Override
+            public boolean create() throws IOException {
+                //Log.e("Sshd", "creating file");
+                boolean ret = super.create();
+                if (ret) {
+                    MediaStoreHelper.indexFile(context, Uri.fromFile(file));
+                }
+                return ret;
+
             }
         }
-
-        @Override
-        public boolean delete() {
-            //Log.e("Sshd", "deleting file");
-            boolean ret = super.delete();
-            if (ret) {
-                MediaStoreHelper.indexFile(context, Uri.fromFile(file));
-            }
-            return ret;
-
-        }
-
-        @Override
-        public boolean create() throws IOException {
-            //Log.e("Sshd", "creating file");
-            boolean ret = super.create();
-            if (ret) {
-                MediaStoreHelper.indexFile(context, Uri.fromFile(file));
-            }
-            return ret;
-
-        }
-    }
-
+    */
     static class SimplePasswordAuthenticator implements PasswordAuthenticator {
 
         public String password;
