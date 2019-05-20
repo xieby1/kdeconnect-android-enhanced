@@ -98,7 +98,7 @@ public class SslHelper {
 
                 String certDeviceId = getCommonNameFromCertificate(cert);
                 if (!certDeviceId.equals(deviceId)) {
-                    Log.e("KDE/SslHelper", "The certificate stored is from a different device id! (found: "+certDeviceId+" expected:"+deviceId +")");
+                    Log.e("KDE/SslHelper", "The certificate stored is from a different device id! (found: " + certDeviceId + " expected:" + deviceId + ")");
                     needsToGenerateCertificate = true;
                 } else {
                     certificate = cert;
