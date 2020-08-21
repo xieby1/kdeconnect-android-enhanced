@@ -22,6 +22,7 @@ import org.kde.kdeconnect_tp.databinding.TrustedNetworkListBinding;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class TrustedNetworksActivity extends AppCompatActivity {
     private TrustedNetworkListBinding binding;
@@ -112,24 +113,29 @@ public class TrustedNetworksActivity extends AppCompatActivity {
             addButton.setVisibility(View.GONE);
             return;
         }
-        final String currentSSID = trustedNetworkHelper.currentSSID();
-        if (!currentSSID.isEmpty() && !trustedNetworks.contains(currentSSID)) {
-            String buttonText = getString(R.string.add_trusted_network, currentSSID);
-            addButton.setText(buttonText);
-            addButton.setOnClickListener(v -> {
-                if (trustedNetworks.contains(currentSSID)){
+
+        addButton.setVisibility(View.GONE);
+
+        final Optional<String> currentSSID = trustedNetworkHelper.currentSSID();
+
+        currentSSID.ifPresent((ssid) -> {
+            if (!trustedNetworks.contains(ssid)) {
+                String buttonText = getString(R.string.add_trusted_network, ssid);
+                addButton.setText(buttonText);
+                addButton.setOnClickListener(v -> {
+
+                if (trustedNetworks.contains(ssid)){
                     return;
                 }
-                trustedNetworks.add(currentSSID);
+                trustedNetworks.add(ssid);
                 trustedNetworkHelper.update(trustedNetworks);
                 ((ArrayAdapter) trustedNetworksView.getAdapter()).notifyDataSetChanged();
                 v.setVisibility(View.GONE);
                 updateEmptyListMessage();
             });
             addButton.setVisibility(View.VISIBLE);
-        } else {
-            addButton.setVisibility(View.GONE);
         }
+        });
     }
 
 }

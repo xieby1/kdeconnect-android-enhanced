@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 public class TrustedNetworkHelper {
 
@@ -65,19 +66,19 @@ public class TrustedNetworkHelper {
         return (result == PackageManager.PERMISSION_GRANTED);
     }
 
-    public String currentSSID() {
+    public Optional<String> currentSSID() {
         WifiManager wifiManager = ContextCompat.getSystemService(context.getApplicationContext(),
                 WifiManager.class);
-        if (wifiManager == null) return "";
+        if (wifiManager == null) return Optional.empty();
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         if (wifiInfo.getSupplicantState() != SupplicantState.COMPLETED) {
-            return "";
+            return Optional.empty();
         }
         String ssid = wifiInfo.getSSID();
         if (ssid.equalsIgnoreCase(NOT_AVAILABLE_SSID_RESULT)){
-            return "";
+            return Optional.empty();
         }
-        return ssid;
+        return Optional.of(ssid);
     }
 
     public static boolean isTrustedNetwork(Context context) {
