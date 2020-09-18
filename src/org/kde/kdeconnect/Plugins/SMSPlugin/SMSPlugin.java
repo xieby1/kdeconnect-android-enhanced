@@ -391,6 +391,8 @@ public class SMSPlugin extends Plugin {
         switch (np.getType()) {
             case PACKET_TYPE_SMS_REQUEST_CONVERSATIONS:
                 return this.handleRequestConversations(np);
+            case PACKET_TYPE_SMS_REQUEST_CONVERSATION:
+                return this.handleRequestConversation(np);
             case PACKET_TYPE_SMS_REQUEST:
                 if (np.getBoolean("sendSms")) {
                     String textMessage = np.getString("messageBody");
