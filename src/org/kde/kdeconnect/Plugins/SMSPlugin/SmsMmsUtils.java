@@ -107,15 +107,8 @@ public class SmsMmsUtils {
             // but sending SMS doesn't needs the app to be set as the default app.
             // This is the reason why there are separate branch handling for SMS and MMS.
             if (transaction.checkMMS(message)) {
-                if (Utils.isDefaultSmsApp(context)) {
-                    if (Utils.isMobileDataEnabled(context)) {
-                        com.klinker.android.logger.Log.v("", "Sending new MMS");
-                        transaction.sendNewMessage(message, Transaction.NO_THREAD_ID);
-                    }
-                } else {
-                    com.klinker.android.logger.Log.v(SENDING_MESSAGE, "KDE Connect is not set to default SMS app.");
-                    //TODO: Notify other end that they need to enable the mobile data in order to send MMS
-                }
+                com.klinker.android.logger.Log.v("", "Sending new MMS");
+                transaction.sendNewMessage(message, Transaction.NO_THREAD_ID);
             } else {
                 com.klinker.android.logger.Log.v(SENDING_MESSAGE, "Sending new SMS");
                 transaction.sendNewMessage(message, Transaction.NO_THREAD_ID);
