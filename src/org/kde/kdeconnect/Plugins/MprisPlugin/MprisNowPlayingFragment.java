@@ -53,7 +53,7 @@ public class MprisNowPlayingFragment extends Fragment implements VolumeKeyListen
     private MprisPlugin.MprisPlayer targetPlayer = null;
     private final BaseLinkProvider.ConnectionReceiver connectionReceiver = new BaseLinkProvider.ConnectionReceiver() {
         @Override
-        public void onConnectionReceived(NetworkPacket identityPacket, BaseLink link) {
+        public void onConnectionReceived(String deviceId, NetworkPacket identityPacket, BaseLink link) {
             connectToPlugin(null);
         }
 

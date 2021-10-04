@@ -173,9 +173,7 @@ public class BackgroundService extends Service {
 
     private final BaseLinkProvider.ConnectionReceiver deviceListener = new BaseLinkProvider.ConnectionReceiver() {
         @Override
-        public void onConnectionReceived(final NetworkPacket identityPacket, final BaseLink link) {
-
-            String deviceId = identityPacket.getString("deviceId");
+        public void onConnectionReceived(String deviceId, final NetworkPacket identityPacket, final BaseLink link) {
 
             Device device = devices.get(deviceId);
 

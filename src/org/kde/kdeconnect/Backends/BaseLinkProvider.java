@@ -15,7 +15,7 @@ public abstract class BaseLinkProvider {
     private final CopyOnWriteArrayList<ConnectionReceiver> connectionReceivers = new CopyOnWriteArrayList<>();
 
     public interface ConnectionReceiver {
-        void onConnectionReceived(NetworkPacket identityPacket, BaseLink link);
+        void onConnectionReceived(String deviceId, NetworkPacket identityPacket, BaseLink link);
         void onConnectionLost(BaseLink link);
     }
 
@@ -28,10 +28,10 @@ public abstract class BaseLinkProvider {
     }
 
     //These two should be called when the provider links to a new computer
-    protected void connectionAccepted(NetworkPacket identityPacket, BaseLink link) {
+    protected void connectionAccepted(String deviceId, NetworkPacket identityPacket, BaseLink link) {
         //Log.i("KDE/LinkProvider", "connectionAccepted");
         for(ConnectionReceiver cr : connectionReceivers) {
-            cr.onConnectionReceived(identityPacket, link);
+            cr.onConnectionReceived(deviceId, identityPacket, link);
         }
     }
     protected void connectionLost(BaseLink link) {

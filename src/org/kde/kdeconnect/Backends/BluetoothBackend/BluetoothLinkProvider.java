@@ -60,7 +60,7 @@ public class BluetoothLinkProvider extends BaseLinkProvider {
             return;
         }
         visibleComputers.put(deviceId, link);
-        connectionAccepted(identityPacket, link);
+        connectionAccepted(deviceId, identityPacket, link);
         link.startListening();
         if (oldLink != null) {
             Log.i("BluetoothLinkProvider", "Removing old connection to same device");

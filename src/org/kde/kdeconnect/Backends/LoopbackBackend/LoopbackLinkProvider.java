@@ -31,7 +31,7 @@ public class LoopbackLinkProvider extends BaseLinkProvider {
     @Override
     public void onNetworkChange() {
         NetworkPacket np = NetworkPacket.createIdentityPacket(context);
-        connectionAccepted(np, new LoopbackLink(context, this));
+        connectionAccepted(np.getString("deviceId"), np, new LoopbackLink(context, this));
     }
 /*
     @Override

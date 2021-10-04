@@ -259,7 +259,7 @@ public class LanLinkProvider extends BaseLinkProvider implements LanLink.LinkDis
      */
     private void addLink(final NetworkPacket identityPacket, SSLSocket socket, LanLink.ConnectionStarted connectionOrigin) throws IOException {
 
-        String deviceId = identityPacket.getString("deviceId");
+        String deviceId = socket.getSession().getPeerCertificateChain()[0].getSubjectDN().getName();
         LanLink currentLink = visibleComputers.get(deviceId);
         if (currentLink != null) {
             //Update old link
@@ -271,7 +271,7 @@ public class LanLinkProvider extends BaseLinkProvider implements LanLink.LinkDis
             //Let's create the link
             LanLink link = new LanLink(context, deviceId, this, socket, connectionOrigin);
             visibleComputers.put(deviceId, link);
-            connectionAccepted(identityPacket, link);
+            connectionAccepted(deviceId, identityPacket, link);
         }
     }
 
