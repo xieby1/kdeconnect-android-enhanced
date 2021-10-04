@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -36,6 +37,7 @@ import java.net.SocketException;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -259,7 +261,13 @@ public class LanLinkProvider extends BaseLinkProvider implements LanLink.LinkDis
      */
     private void addLink(final NetworkPacket identityPacket, SSLSocket socket, LanLink.ConnectionStarted connectionOrigin) throws IOException {
 
-        String deviceId = socket.getSession().getPeerCertificateChain()[0].getSubjectDN().getName();
+        // hack to parse the common name from the certificate distinguished name
+        // DN will look like "CN=<ID>,O=KDE,OU=Kde connect" and we want to extract the ID from the CN part
+        String distinguishedName = socket.getSession().getPeerCertificateChain()[0].getSubjectDN().getName();
+        Properties props = new Properties();
+        props.load(new StringReader(distinguishedName.replaceAll(",", "\n")));
+        String deviceId = props.getProperty("CN");
+
         LanLink currentLink = visibleComputers.get(deviceId);
         if (currentLink != null) {
             //Update old link
