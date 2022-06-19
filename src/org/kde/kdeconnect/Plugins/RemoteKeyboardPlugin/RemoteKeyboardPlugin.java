@@ -337,7 +337,7 @@ public class RemoteKeyboardPlugin extends Plugin implements SharedPreferences.On
                 return inputConn.performContextMenuAction(android.R.id.cut);
             else if (key.equalsIgnoreCase("a") && ctrl)
                 return inputConn.performContextMenuAction(android.R.id.selectAll);
-        } else if (key.equalsIgnoreCase("c") && (shift || ctrl || alt)) {
+        } else if (key.equalsIgnoreCase("c") && ctrl) {
             char[] chars = key.toCharArray();
             KeyCharacterMap CharMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
             // CharMap = KeyCharacterMap.load(KeyCharacterMap.ALPHA);
