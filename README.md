@@ -1,6 +1,8 @@
 # KDE Connect Android Enhanced
 
-Use KDE Connect Android Enhanced together with [KDE Connect Enhanced](https://github.com/xieby1/kdeconnect-kde-enhanced)(Linux).
+Use KDE Connect Android Enhanced together
+with [KDE Connect Enhanced](https://github.com/xieby1/kdeconnect-kde-enhanced)(Linux),
+or with [Gnome Extension: GSConnect](https://github.com/GSConnect/gnome-shell-extension-gsconnect).
 
 ## Intro
 
