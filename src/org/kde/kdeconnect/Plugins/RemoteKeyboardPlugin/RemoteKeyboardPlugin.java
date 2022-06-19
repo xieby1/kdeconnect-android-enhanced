@@ -13,6 +13,7 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseIntArray;
+import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedText;
@@ -46,6 +47,8 @@ public class RemoteKeyboardPlugin extends Plugin implements SharedPreferences.On
     private static final ArrayList<RemoteKeyboardPlugin> instances = new ArrayList<>();
     private static final ReentrantLock instancesLock = new ReentrantLock(true);
 
+    private static boolean isOrigMode = false;
+
     private static ArrayList<RemoteKeyboardPlugin> getInstances() {
         return instances;
     }
@@ -62,6 +65,11 @@ public class RemoteKeyboardPlugin extends Plugin implements SharedPreferences.On
 
     public static boolean isConnected() {
         return instances.size() > 0;
+    }
+
+    public static boolean toggleOrigMode() {
+        isOrigMode = !isOrigMode;
+        return isOrigMode;
     }
 
     private static final SparseIntArray specialKeyMap = new SparseIntArray();
@@ -278,15 +286,21 @@ public class RemoteKeyboardPlugin extends Plugin implements SharedPreferences.On
                     && (((editorInfo.imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0)
                     || ctrl)) {  // Ctrl+Return overrides IME_FLAG_NO_ENTER_ACTION (FIXME: make configurable?)
                 // check for special DONE/GO/etc actions first:
-                int[] actions = {EditorInfo.IME_ACTION_GO, EditorInfo.IME_ACTION_NEXT,
-                        EditorInfo.IME_ACTION_SEND, EditorInfo.IME_ACTION_SEARCH,
-                        EditorInfo.IME_ACTION_DONE};  // note: DONE should be last or we might hide the ime instead of "go"
-                for (int action : actions) {
-                    if ((editorInfo.imeOptions & action) == action) {
-//                        Log.d("RemoteKeyboardPlugin", "Enter-action: " + actions[i]);
-                        inputConn.performEditorAction(action);
-                        return true;
+                if (isOrigMode) {
+                    int[] actions = {EditorInfo.IME_ACTION_GO, EditorInfo.IME_ACTION_NEXT,
+                            EditorInfo.IME_ACTION_SEND, EditorInfo.IME_ACTION_SEARCH,
+                            EditorInfo.IME_ACTION_DONE};  // note: DONE should be last or we might hide the ime instead of "go"
+                    for (int action : actions) {
+                        if ((editorInfo.imeOptions & action) == action) {
+//                            Log.d("RemoteKeyboardPlugin", "Enter-action: " + actions[i]);
+                            inputConn.performEditorAction(action);
+                            return true;
+                        }
                     }
+                } else {
+                    int action = EditorInfo.IME_ACTION_SEND;
+                    inputConn.performEditorAction(action);
+                    return true;
                 }
             } else {
                 // else: fall back to regular Enter-event:
@@ -313,15 +327,44 @@ public class RemoteKeyboardPlugin extends Plugin implements SharedPreferences.On
         if (inputConn == null)
             return false;
 
-        // ctrl+c/v/x
-        if (key.equalsIgnoreCase("c") && ctrl) {
-            return inputConn.performContextMenuAction(android.R.id.copy);
-        } else if (key.equalsIgnoreCase("v") && ctrl)
-            return inputConn.performContextMenuAction(android.R.id.paste);
-        else if (key.equalsIgnoreCase("x") && ctrl)
-            return inputConn.performContextMenuAction(android.R.id.cut);
-        else if (key.equalsIgnoreCase("a") && ctrl)
-            return inputConn.performContextMenuAction(android.R.id.selectAll);
+        if (isOrigMode) {
+            // ctrl+c/v/x
+            if (key.equalsIgnoreCase("c") && ctrl) {
+                return inputConn.performContextMenuAction(android.R.id.copy);
+            } else if (key.equalsIgnoreCase("v") && ctrl)
+                return inputConn.performContextMenuAction(android.R.id.paste);
+            else if (key.equalsIgnoreCase("x") && ctrl)
+                return inputConn.performContextMenuAction(android.R.id.cut);
+            else if (key.equalsIgnoreCase("a") && ctrl)
+                return inputConn.performContextMenuAction(android.R.id.selectAll);
+        } else if (key.equalsIgnoreCase("c") && (shift || ctrl || alt)) {
+            char[] chars = key.toCharArray();
+            KeyCharacterMap CharMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+            // CharMap = KeyCharacterMap.load(KeyCharacterMap.ALPHA);
+            KeyEvent[] events = CharMap.getEvents(chars);
+
+            inputConn.sendKeyEvent(new KeyEvent(
+                android.os.SystemClock.uptimeMillis(),
+                android.os.SystemClock.uptimeMillis(),
+                KeyEvent.ACTION_DOWN,
+                events[0].getKeyCode(),
+                0,
+                (shift ? KeyEvent.META_SHIFT_LEFT_ON : 0) +
+                (ctrl ? KeyEvent.META_CTRL_ON : 0) +
+                (alt ? KeyEvent.META_ALT_LEFT_ON : 0)
+            ));
+            inputConn.sendKeyEvent(new KeyEvent(
+                android.os.SystemClock.uptimeMillis(),
+                android.os.SystemClock.uptimeMillis(),
+                KeyEvent.ACTION_UP,
+                events[0].getKeyCode(),
+                0,
+                (shift ? KeyEvent.META_SHIFT_LEFT_ON : 0) +
+                (ctrl ? KeyEvent.META_CTRL_ON : 0) +
+                (alt ? KeyEvent.META_ALT_LEFT_ON : 0)
+            ));
+            return true;
+        }
 
 //        Log.d("RemoteKeyboardPlugin", "Committing visible key '" + key + "'");
         inputConn.commitText(key, key.length());

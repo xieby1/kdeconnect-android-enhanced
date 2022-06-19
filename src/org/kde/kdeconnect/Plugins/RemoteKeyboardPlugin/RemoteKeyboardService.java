@@ -187,6 +187,10 @@ public class RemoteKeyboardService
                     Toast.makeText(this, R.string.remotekeyboard_not_connected, Toast.LENGTH_SHORT).show();
                 break;
             }
+            case 4: { // "original mode"
+                RemoteKeyboardPlugin.toggleOrigMode();
+                Toast.makeText(this, "toggle orignal mode", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

@@ -12,14 +12,18 @@
         <Key
             android:codes="1"
             android:keyIcon="@drawable/ic_settings_white_32dp"
-            android:keyWidth="40%" />
+            android:keyWidth="30%" />
         <Key
             android:codes="2"
             android:keyIcon="@drawable/ic_action_keyboard_24dp"
-            android:keyWidth="40%" />
+            android:keyWidth="30%" />
         <Key
             android:codes="3"
             android:keyIcon="@drawable/ic_phonelink_36dp"
+            android:keyWidth="20%" />
+        <Key
+            android:codes="4"
+            android:keyIcon="@drawable/button_round"
             android:keyWidth="20%" />-->
     </Row>
 </Keyboard>
