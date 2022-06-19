@@ -1,3 +1,45 @@
+# KDE Connect Android Enhanced
+
+Use KDE Connect Android Enhanced together with [KDE Connect Enhanced](https://github.com/xieby1/kdeconnect-kde-enhanced)(Linux).
+
+## Intro
+
+Make KDE Connect remote keyboard better, especially for termux!
+
+
+A toggle button is added to KDE Connect remote keyboard,
+which switch between original mode and non-original mode.
+
+* In non-original mode, which is default,
+  * `Enter` key works as expected, no need to be bother by `ctrl-j` any more.
+  * `Ctrl-C` works as expected. You can esaily interrupt the running programs now.
+  * `Ctrl-V` clipboard works. You can paste your linux's content to your android device.
+* In original, everything is the same as original KDE Connect Android App.
+
+If you only install enhanced android app, but do not install enhanced linux app,
+only `Enter` key can work, `Ctrl-C` & `Ctrl-V` rely on enhanced linux app.
+
+## Compile/Install
+
+Compile/Install is the same as original KDE Connect Android App.
+
+Or you can download pre-built apk from [release](https://github.com/xieby1/kdeconnect-android-enhanced/releases).
+
+### Nix/NixOS
+
+If you want to build in nix/nixos,
+
+TODO: sdk installation problem
+
+```bash
+nix-shell
+gradlew build
+```
+
+## TODO
+
+* Add a icon for toggle button.
+
 # KDE Connect - Android app
 
 KDE Connect is a multi-platform app that allows your devices to communicate (eg: your phone and your computer).
